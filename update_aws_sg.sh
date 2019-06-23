@@ -66,13 +66,13 @@ done;
 if [ "${access_granted}" == "true" ]; then
     echo -e "Access already authorised from ${my_cidr}";
 else
-    echo -en "Authorising SSH access to ${group_id} from ${my_cidr}... ";
+    echo -en "Adding inbound rule in group ${group_id} for ${my_cidr}...\n";
     aws ec2 authorize-security-group-ingress \
  --group-id ${group_id} \
  --ip-permissions IpProtocol="${protocol}",FromPort="${port}",ToPort="${port}",\
-IpRanges='[{CidrIp='${my_cidr}',Description="'${rule_description}'"}]' \
- && echo -e "Done." \
- || exit_with_error "Failed.";
+IpRanges="[{CidrIp=${my_cidr},Description='${rule_description}'}]" \
+ && echo -e "Done" \
+ || exit_with_error "Failed";
 fi;
 
 exit 0;
