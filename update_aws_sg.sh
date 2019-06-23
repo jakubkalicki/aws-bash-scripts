@@ -26,20 +26,15 @@ my_ip="$(curl -s curlmyip.org || echo "Failed")";
 [ "${my_ip}" == "Failed" ] \
  && exit_with_error "Failed to retrieve my IP from v4.ifconfig.co";
 
-allowed_cidrs="$(aws ec2 describe-security-groups \
+# Use "" as external tags to let multiple string in rule_description
+# Use '' for strings (it's a short for `""`)
+# Use \` for numbers (has to be escaped because it's inside of "")
+aws ec2 describe-security-groups \
                    --output text \
-                   --query '
-                     SecurityGroups[?
-                       GroupId==`'${group_id}'`
-                     ].
-                     [
-                       IpPermissions[?
-                         ToPort==`'${port}'` && FromPort==`'${port}'` && IpProtocol==`tcp`
-                       ].
-                       IpRanges[?Description!=`null` && Description==`'${rule_description}'`].
-                       CidrIp
-                     ]' \
-                   || echo "Failed")";
+                   --query "SecurityGroups[?GroupId=='${group_id}']\
+ | [0].IpPermissions[?ToPort==\`${port}\` && FromPort==\`${port}\` && IpProtocol==\`${protocol}\`]\
+ | [0].IpRanges[?Description!='null' && Description=='${rule_description}'].CidrIp"\
+ || echo "Failed" > allowed_cidrs;
 
 [ "${allowed_cidrs}" == "Failed" ] \
  && exit_with_error "Failed to retrieve SSH ingress rules for ${group_id}";
